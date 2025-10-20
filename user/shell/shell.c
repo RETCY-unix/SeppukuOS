@@ -1,5 +1,6 @@
 #include "../../Lib/include/screen.h"
 #include "../../Lib/include/keyboard.h"
+#include "../apps/filemanager.h"
 
 #define MAX_COMMAND_LENGTH 512
 #define MAX_HISTORY 100
@@ -191,6 +192,11 @@ void cmd_help() {
     screen_println("  calc <expr>    - Calculator");
     
     screen_set_color(COLOR_YELLOW, COLOR_BLACK);
+    screen_println("\nAPPLICATIONS:");
+    screen_set_color(COLOR_WHITE, COLOR_BLACK);
+    screen_println("  fm, files      - File Manager (TUI)");
+    
+    screen_set_color(COLOR_YELLOW, COLOR_BLACK);
     screen_println("\nENVIRONMENT:");
     screen_set_color(COLOR_WHITE, COLOR_BLACK);
     screen_println("  set var=val    - Set variable");
@@ -281,7 +287,7 @@ void cmd_cpuinfo() {
 }
 
 void cmd_echo(const char* text) {
-    if (text[0] == '$' && text[1] != '\0') {
+    if (text[0] == ' && text[1] != '\0') {
         const char* val = env_get(text + 1);
         if (val) {
             screen_set_color(COLOR_YELLOW, COLOR_BLACK);
@@ -462,6 +468,22 @@ void shell_execute(const char* cmd) {
     else if (str_cmp(cmd_name, "calc") == 0) cmd_calc(args);
     else if (str_cmp(cmd_name, "banner") == 0) cmd_banner(args);
     else if (str_cmp(cmd_name, "reboot") == 0) cmd_reboot();
+    else if (str_cmp(cmd_name, "fm") == 0 || str_cmp(cmd_name, "files") == 0) {
+        screen_set_color(COLOR_LIGHT_CYAN, COLOR_BLACK);
+        screen_println("\nLaunching File Manager...");
+        screen_set_color(COLOR_WHITE, COLOR_BLACK);
+        
+        // Small delay for visual effect
+        for (volatile int j = 0; j < 10000000; j++);
+        
+        // Launch file manager
+        filemanager_run();
+        
+        // When returning from file manager, show prompt again
+        screen_clear();
+        shell_init();
+        return;
+    }
     else if (str_cmp(cmd_name, "halt") == 0) {
         screen_set_color(COLOR_YELLOW, COLOR_BLACK);
         screen_println("System halted.");

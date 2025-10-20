@@ -178,12 +178,11 @@ void filemanager_redraw() {
     help_bar.scroll_offset = 0;
     
     tui_draw_window(&help_bar);
-    tui_write_in_window(&help_bar, 1, 0, "↑↓=Navigate  ENTER=Open  DEL=Delete  F2=Rename  Q=Quit", COLOR_YELLOW);
+    tui_write_in_window(&help_bar, 1, 0, "UP/DOWN=Navigate  ENTER=Open  DEL=Delete  F2=Rename  Q=Quit", COLOR_YELLOW);
     
     // Update status bar with current selection info
     if (fm_selected_index >= 0 && fm_selected_index < fm_item_count) {
         char status[30];
-        char size_str[12];
         
         // Build status message
         int idx = 0;
@@ -229,4 +228,204 @@ void filemanager_move_down() {
         // Adjust scroll if needed
         int visible_items = fm_main_window.height - 2;
         if (fm_selected_index >= fm_main_window.scroll_offset + visible_items) {
-            fm_main_window.scroll_offset = fm_selected_index - visible
+            fm_main_window.scroll_offset = fm_selected_index - visible_items + 1;
+        }
+        
+        filemanager_redraw();
+    }
+}
+
+void filemanager_page_up() {
+    int page_size = fm_main_window.height - 2;
+    fm_selected_index -= page_size;
+    if (fm_selected_index < 0) fm_selected_index = 0;
+    
+    fm_main_window.scroll_offset = fm_selected_index;
+    filemanager_redraw();
+}
+
+void filemanager_page_down() {
+    int page_size = fm_main_window.height - 2;
+    fm_selected_index += page_size;
+    if (fm_selected_index >= fm_item_count) fm_selected_index = fm_item_count - 1;
+    
+    int visible_items = fm_main_window.height - 2;
+    if (fm_selected_index >= fm_main_window.scroll_offset + visible_items) {
+        fm_main_window.scroll_offset = fm_selected_index - visible_items + 1;
+    }
+    
+    filemanager_redraw();
+}
+
+void filemanager_select_item() {
+    filemanager_open_file();
+}
+
+// File operations (placeholders)
+void filemanager_open_file() {
+    if (fm_selected_index >= 0 && fm_selected_index < fm_item_count) {
+        tui_list_item_t* item = &fm_items[fm_selected_index];
+        
+        if (item->type == 'd') {
+            // Directory - show message
+            char msg[80];
+            int idx = 0;
+            const char* prefix = "Opening directory: ";
+            while (*prefix) msg[idx++] = *prefix++;
+            
+            for (int i = 0; item->name[i] && idx < 70; i++) {
+                msg[idx++] = item->name[i];
+            }
+            msg[idx] = '\0';
+            
+            tui_show_message_box("Directory", msg);
+            
+            // Wait for keypress
+            while (!keyboard_available()) {
+                __asm__ __volatile__("hlt");
+            }
+            keyboard_getchar();
+            filemanager_redraw();
+        } else {
+            // File - show info
+            char msg[80];
+            int idx = 0;
+            const char* prefix = "File: ";
+            while (*prefix) msg[idx++] = *prefix++;
+            
+            for (int i = 0; item->name[i] && idx < 60; i++) {
+                msg[idx++] = item->name[i];
+            }
+            
+            const char* size_prefix = " (Size: ";
+            while (*size_prefix) msg[idx++] = *size_prefix++;
+            
+            char size_str[12];
+            fm_itoa(item->size, size_str);
+            for (int i = 0; size_str[i] && idx < 75; i++) {
+                msg[idx++] = size_str[i];
+            }
+            
+            msg[idx++] = ' ';
+            msg[idx++] = 'b';
+            msg[idx++] = 'y';
+            msg[idx++] = 't';
+            msg[idx++] = 'e';
+            msg[idx++] = 's';
+            msg[idx++] = ')';
+            msg[idx] = '\0';
+            
+            tui_show_message_box("File Info", msg);
+            
+            // Wait for keypress
+            while (!keyboard_available()) {
+                __asm__ __volatile__("hlt");
+            }
+            keyboard_getchar();
+            filemanager_redraw();
+        }
+    }
+}
+
+void filemanager_delete_file() {
+    if (fm_selected_index >= 0 && fm_selected_index < fm_item_count) {
+        tui_show_message_box("Delete", "Delete not implemented yet");
+        
+        // Wait for keypress
+        while (!keyboard_available()) {
+            __asm__ __volatile__("hlt");
+        }
+        keyboard_getchar();
+        filemanager_redraw();
+    }
+}
+
+void filemanager_rename_file() {
+    if (fm_selected_index >= 0 && fm_selected_index < fm_item_count) {
+        tui_show_message_box("Rename", "Rename not implemented yet");
+        
+        // Wait for keypress
+        while (!keyboard_available()) {
+            __asm__ __volatile__("hlt");
+        }
+        keyboard_getchar();
+        filemanager_redraw();
+    }
+}
+
+void filemanager_create_directory() {
+    tui_show_message_box("New Directory", "Create directory not implemented yet");
+    
+    // Wait for keypress
+    while (!keyboard_available()) {
+        __asm__ __volatile__("hlt");
+    }
+    keyboard_getchar();
+    filemanager_redraw();
+}
+
+void filemanager_exit() {
+    fm_running = 0;
+    screen_clear();
+}
+
+// Main file manager loop
+void filemanager_run() {
+    filemanager_init();
+    
+    while (fm_running) {
+        if (keyboard_available()) {
+            char key = keyboard_getchar();
+            
+            // Handle arrow keys (would need extended scancodes)
+            // For now, use simple keys
+            switch (key) {
+                case 'w':  // Up
+                case 'W':
+                    filemanager_move_up();
+                    break;
+                    
+                case 's':  // Down
+                case 'S':
+                    filemanager_move_down();
+                    break;
+                    
+                case 'a':  // Page up
+                case 'A':
+                    filemanager_page_up();
+                    break;
+                    
+                case 'd':  // Page down
+                case 'D':
+                    filemanager_page_down();
+                    break;
+                    
+                case '\n':  // Enter
+                    filemanager_select_item();
+                    break;
+                    
+                case 'q':  // Quit
+                case 'Q':
+                    filemanager_exit();
+                    break;
+                    
+                case 'r':  // Rename
+                case 'R':
+                    filemanager_rename_file();
+                    break;
+                    
+                case 'n':  // New directory
+                case 'N':
+                    filemanager_create_directory();
+                    break;
+                    
+                case 127:  // Delete
+                case '\b':
+                    filemanager_delete_file();
+                    break;
+            }
+        }
+        
+        __asm__ __volatile__("hlt");
+    }
+}
